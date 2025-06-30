@@ -28,8 +28,8 @@ def res_color(colors: tuple, name: str):
 
 
 if __name__ == '__main__':
-    first = Hash('file.jpg').get_grey()
-    second = res = Hash('file2.jpg').get_grey()
-    third = Hash('file3.jpg').get_grey()
-    res_color(second, 'sec.png')
+    first = Hash('templates/file.jpg').get_grey()
+    second = Hash('templates/file2.jpg').get_grey()
+    third = Hash('templates/file3.jpg').get_grey()
+    res_color(second, 'file2.png')
     print(first, '\n', second, '\n', third)
