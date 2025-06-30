@@ -10,12 +10,26 @@ class Hash:
 
 
     def get_grey(self) -> tuple:
-        R, G, B, L = 0, 0, 0, 0
+        R, G, B, A = 0, 0, 0, 0
         for i in range(self.size):
             for j in range(self.size):
-                r, g, b, l = self.pixels[i, j]
+                r, g, b, a = self.pixels[i, j]
                 R += r
                 G += g
                 B += b
-                L += l
-        return R/ self.size ** 2, G/ self.size ** 2, B/ self.size ** 2, L/ self.size ** 2
+                A += a
+        return R/ self.size ** 2, G/ self.size ** 2, B/ self.size ** 2, A/ self.size ** 2
+
+
+def res_color(colors: tuple, name: str):
+    img = Image.new('RGBA', [500, 500], tuple(map(int, colors)))
+    img.save(name)
+    img.close()
+
+
+if __name__ == '__main__':
+    first = Hash('file.jpg').get_grey()
+    second = res = Hash('file2.jpg').get_grey()
+    third = Hash('file3.jpg').get_grey()
+    res_color(second, 'sec.png')
+    print(first, '\n', second, '\n', third)
