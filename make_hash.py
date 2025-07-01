@@ -1,6 +1,7 @@
 from PIL import Image
 
 class Hash:
+    """Класс по преобразованию цвета в его цветовой код - база программы"""
     def __init__(self, name) -> None:
         img = Image.open(name)
         self.size = min(img.size)
@@ -22,6 +23,7 @@ class Hash:
 
 
 def res_color(colors: tuple, name: str):
+    """Записывает в файл заливку  из заданного цвета"""
     img = Image.new('RGBA', [500, 500], tuple(map(int, colors)))
     img.save(name)
     img.close()

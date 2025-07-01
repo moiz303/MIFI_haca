@@ -1,11 +1,13 @@
 from make_hash import Hash, res_color
-from scipy.optimize import lsq_linear
+
 from math import gcd
 from functools import reduce
 import numpy as np
 import os
 
 import matplotlib.pyplot as plt
+
+from scipy.optimize import lsq_linear
 
 
 def mix_colors(colors_array):
@@ -24,7 +26,7 @@ def mix_colors(colors_array):
 
 
 def apply_alpha(color, background=(255, 255, 255)):
-    """Применяет альфа-канал к цвету на заданном фоне."""
+    """Применяет альфа-канал к цвету на заданном фоне"""
     alpha = color[3] / 255.0
     return (
         int(color[0] * alpha + background[0] * (1 - alpha)),
@@ -34,7 +36,7 @@ def apply_alpha(color, background=(255, 255, 255)):
 
 
 def color_similarity(original_color, mixed_color):
-    """Вычисляет процент совпадения цветов (0-100%)"""
+    """Вычисляет процент совпадения цветов (0-100)"""
     diff = np.sqrt(np.sum((original_color - mixed_color) ** 2))  # Евклидово расстояние
     max_diff = np.sqrt(3 * 255 ** 2)  # Максимальное возможное расстояние (чёрный и белый)
     similarity = 100 * (1 - diff / max_diff)
@@ -62,21 +64,19 @@ def mix_colors_with_ratio(colors_array, ratios):
     return mixed_color
 
 
-def plot_color_matching_accuracy(colors_array, max_precision=1000, step=10):
+def plot_color_matching_accuracy(percentages, colors_array, max_precision=1000, step=10):
     """Строит график зависимости точности смешивания от параметра precision"""
-    source_colors = colors_array[:-1]
     target_color = colors_array[-1]
 
-    # Вычисляем идеальные проценты (через наименьшие квадраты)
-    percentages = lsq_linear(source_colors.T, target_color, bounds=(0, 1)).x
-    percentages /= percentages.sum()  # Нормализуем
 
-    precisions = range(1, max_precision + 1, step)
+    precisions = range(1, max_precision + 2, step)
     similarities = []
+    all_ratios = []
 
     for precision in precisions:
         # Преобразуем проценты в целые соотношения
         ratios = float_to_ratio(percentages, precision)
+        all_ratios.append(list(map(int, ratios)))
 
         # Смешиваем цвета
         mixed_color = mix_colors_with_ratio(colors_array, ratios)
@@ -85,12 +85,20 @@ def plot_color_matching_accuracy(colors_array, max_precision=1000, step=10):
         similarity = color_similarity(target_color, mixed_color)
         similarities.append(similarity)
 
-    # Построение графика
+    # Находим самое большое совпадение и выводим его коэффициенты как ответ
+    max_similarity = max(similarities)
+    print(f'\nСамая большая точность: {max_similarity}%')
+    needed_lights = all_ratios[similarities.index(max_similarity)]
+    print("Для её достижения нужны:")
+    for cou, light in enumerate(needed_lights):
+        print(f"Свет {cou + 1}: {light}")
+
+    # Построение графика (опционально, но я решил сделать)
     plt.figure(figsize=(10, 6))
     plt.plot(precisions, similarities, label="Совпадение с целевым цветом", color='blue')
     plt.xlabel("Precision (точность округления)")
     plt.ylabel("Совпадение цвета (%)")
-    plt.title("Зависимость качества смешивания от параметра precision")
+    plt.title("Зависимость качества смешивания от соотношения цветов")
     plt.legend()
     plt.show()
 
@@ -102,5 +110,5 @@ if __name__ == "__main__":
     proportions = mix_colors(my_list)
     print("Пропорции смешивания:")
     for i, prop in enumerate(proportions):
-        print(f"Цвет {i + 1}: {prop * 100:.5f}%")
-    plot_color_matching_accuracy(proportions, max_precision=1000, step=10)
+        print(f"Свет {i + 1}: {prop * 100:.5f}%")
+    plot_color_matching_accuracy(proportions, my_list, max_precision=1000, step=10)
