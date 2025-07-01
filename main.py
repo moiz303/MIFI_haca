@@ -68,7 +68,6 @@ def plot_color_matching_accuracy(percentages, colors_array, max_precision=1000, 
     """Строит график зависимости точности смешивания от параметра precision"""
     target_color = colors_array[-1]
 
-
     precisions = range(1, max_precision + 2, step)
     similarities = []
     all_ratios = []

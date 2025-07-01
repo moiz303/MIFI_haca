@@ -11,6 +11,7 @@ class Hash:
 
 
     def get_grey(self) -> tuple:
+        """Разбираем картинку на пиксели и берём среднее для R, G, B, и Альфы (яркости цвета)"""
         R, G, B, A = 0, 0, 0, 0
         for i in range(self.size):
             for j in range(self.size):
