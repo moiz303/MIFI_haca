@@ -7,7 +7,7 @@ import os
 
 import matplotlib.pyplot as plt
 
-from scipy.optimize import lsq_linear
+from scipy.optimize import lsq_linear, minimize
 
 
 def mix_colors(colors_array):
@@ -64,6 +64,25 @@ def mix_colors_with_ratio(colors_array, ratios):
     return mixed_color
 
 
+def optimal_similarity(all_ratios, similarities, threshold=0.1):
+    """Поиск самого подходящего варианта с учётом погрешности - по сути, функция потерь"""
+    max_similarity = max(similarities)
+
+    # Фильтруем соотношения, у которых точность "достаточно близка" к максимальной
+    valid_indices = [i for i, sim in enumerate(similarities)
+                     if sim >= max_similarity - threshold]
+
+    if not valid_indices:
+        return None  # Нет подходящих вариантов
+
+    # Выбираем среди них соотношение с минимальной суммой чисел
+    valid_ratios = [all_ratios[i] for i in valid_indices]
+    sums = [sum(ratio) for ratio in valid_ratios]
+    optimal_idx = np.argmin(sums)
+
+    return valid_ratios[optimal_idx]
+
+
 def plot_color_matching_accuracy(percentages, colors_array, max_precision=1000, step=10):
     """Строит график зависимости точности смешивания от параметра precision"""
     target_color = colors_array[-1]
@@ -85,10 +104,18 @@ def plot_color_matching_accuracy(percentages, colors_array, max_precision=1000, 
         similarities.append(similarity)
 
     # Находим самое большое совпадение и выводим его коэффициенты как ответ
-    max_similarity = max(similarities)
-    print(f'\nСамая большая точность: {max_similarity}%')
-    needed_lights = all_ratios[similarities.index(max_similarity)]
+    best_similarity = max(similarities)
+    print(f'\nСамая большая точность: {best_similarity}%')
+    needed_lights = all_ratios[similarities.index(best_similarity)]
     print("Для её достижения нужны:")
+    for cou, light in enumerate(needed_lights):
+        print(f"Свет {cou + 1}: {light}")
+
+    # А теперь находим самое большое совпадение с учётом возможной погрешности
+    needed_lights = optimal_similarity(all_ratios, similarities)
+    best_similarity = similarities[all_ratios.index(needed_lights)]
+    print(f'\nСамая оптимальная точность: {best_similarity}%')
+    print('Для её достижения нужны:')
     for cou, light in enumerate(needed_lights):
         print(f"Свет {cou + 1}: {light}")
 

@@ -34,5 +34,6 @@ if __name__ == '__main__':
     first = Hash('templates/file.jpg').get_grey()
     second = Hash('templates/file2.jpg').get_grey()
     third = Hash('templates/file3.jpg').get_grey()
-    res_color(second, 'file2.png')
-    print(first, '\n', second, '\n', third)
+    fourth = Hash('templates/file4.jpg').get_grey()
+    res_color(fourth, 'file4.png')
+    print(first, '\n', second, '\n', third, '\n', fourth)
