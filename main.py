@@ -7,26 +7,44 @@ import os
 
 import matplotlib.pyplot as plt
 
-from scipy.optimize import lsq_linear, minimize
+from scipy.optimize import lsq_linear
 
 
 def mix_colors(colors_array):
-    """Функция для определения пропорций смешивания произвольного количества цветов для получения целевого цвета"""
-    source_colors = colors_array[:-1].T  # Транспонируем для правильной формы матрицы
-    target_color = colors_array[-1]
+    """Функция для определения пропорций смешивания светов с учетом яркости"""
+    normalized = colors_array / 255.0
 
-    # Решаем систему методом наименьших квадратов с ограничением: коэффициенты между 0 и 1
-    result = lsq_linear(source_colors, target_color, bounds=(0, 1))
+    # Отделяем источники от целевого света
+    sources = normalized[:-1, :3].T  # RGB исходных светов
+    target = normalized[-1, :3]  # RGB целевого света
+    target_brightness = normalized[-1, 3] # Яркость целевого света
 
-    # Нормализуем коэффициенты, чтобы их сумма была равна 1
+    # Максимальные яркости источников
+    max_brightness = normalized[:-1, 3]
+
+    # Решаем систему методом наименьших квадратов с ограничениями на коэффициенты
+    bounds = (np.zeros_like(max_brightness), max_brightness)
+    result = lsq_linear(sources, target, bounds=bounds)
+
+    # Получаем и нормализуем коэффициенты
     coefficients = result.x
-    normalized_coefficients = coefficients / coefficients.sum()
 
-    return normalized_coefficients
+    # Масштабируем коэффициенты так, чтобы сумма яркостей = яркости целевого цвета
+    if np.sum(coefficients) > 0:
+        scale_factor = target_brightness / np.sum(coefficients)
+        real_brightness = coefficients * scale_factor
+    else:
+        real_brightness = np.zeros_like(coefficients)
+
+    # Нормализуем пропорции (сумма = 1)
+    proportions = real_brightness / target_brightness if target_brightness > 0 else np.zeros_like(
+        real_brightness)
+
+    return proportions, real_brightness * 255.0
 
 
 def apply_alpha(color, background=(255, 255, 255)):
-    """Применяет альфа-канал к цвету на заданном фоне"""
+    """Применяет альфа-канал к свету на заданном фоне"""
     alpha = color[3] / 255.0
     return (
         int(color[0] * alpha + background[0] * (1 - alpha)),
@@ -36,7 +54,7 @@ def apply_alpha(color, background=(255, 255, 255)):
 
 
 def color_similarity(original_color, mixed_color):
-    """Вычисляет процент совпадения цветов (0-100)"""
+    """Вычисляет процент совпадения светов (0-100)"""
     diff = np.sqrt(np.sum((original_color - mixed_color) ** 2))  # Евклидово расстояние
     max_diff = np.sqrt(3 * 255 ** 2)  # Максимальное возможное расстояние (чёрный и белый)
     similarity = 100 * (1 - diff / max_diff)
@@ -58,7 +76,7 @@ def float_to_ratio(percentages, precision=1000):
 
 
 def mix_colors_with_ratio(colors_array, ratios):
-    """Смешивает цвета в заданных пропорциях (работает с целыми числами)"""
+    """Смешивает света в заданных пропорциях (работает с целыми числами)"""
     ratios = np.array(ratios)
     mixed_color = np.sum(colors_array[:-1] * ratios[:, np.newaxis], axis=0) / np.sum(ratios)
     return mixed_color
@@ -96,7 +114,7 @@ def plot_color_matching_accuracy(percentages, colors_array, max_precision=1000, 
         ratios = float_to_ratio(percentages, precision)
         all_ratios.append(list(map(int, ratios)))
 
-        # Смешиваем цвета
+        # Смешиваем света
         mixed_color = mix_colors_with_ratio(colors_array, ratios)
 
         # Сравниваем с целевым
@@ -105,7 +123,7 @@ def plot_color_matching_accuracy(percentages, colors_array, max_precision=1000, 
 
     # Находим самое большое совпадение и выводим его коэффициенты как ответ
     best_similarity = max(similarities)
-    print(f'\nСамая большая точность: {best_similarity}%')
+    print(f'\nСамая большая точность: {best_similarity} %')
     needed_lights = all_ratios[similarities.index(best_similarity)]
     print("Для её достижения нужны:")
     for cou, light in enumerate(needed_lights):
@@ -114,27 +132,36 @@ def plot_color_matching_accuracy(percentages, colors_array, max_precision=1000, 
     # А теперь находим самое большое совпадение с учётом возможной погрешности
     needed_lights = optimal_similarity(all_ratios, similarities)
     best_similarity = similarities[all_ratios.index(needed_lights)]
-    print(f'\nСамая оптимальная точность: {best_similarity}%')
+    print(f'\nСамая оптимальная точность: {best_similarity} %')
     print('Для её достижения нужны:')
     for cou, light in enumerate(needed_lights):
         print(f"Свет {cou + 1}: {light}")
 
     # Построение графика (опционально, но я решил сделать)
     plt.figure(figsize=(10, 6))
-    plt.plot(precisions, similarities, label="Совпадение с целевым цветом", color='blue')
+    plt.plot(precisions, similarities, label="Совпадение с целевым светом", color='blue')
     plt.xlabel("Precision (точность округления)")
-    plt.ylabel("Совпадение цвета (%)")
-    plt.title("Зависимость качества смешивания от соотношения цветов")
+    plt.ylabel("Совпадение света (%)")
+    plt.title("Зависимость качества смешивания от соотношения светов")
     plt.legend()
     plt.show()
 
 
 if __name__ == "__main__":
+    # Подгружаем света
     [res_color(Hash(f'templates/{name}').get_grey(), f'{name[:-4]}.png') for name in
      os.listdir(os.path.join('templates'))]
     my_list = np.array([Hash(f'templates/{name}').get_grey() for name in os.listdir(os.path.join('templates'))])
-    proportions = mix_colors(my_list)
+
+    # Получаем ключевые данные
+    proportions, brightnesses = mix_colors(my_list)
+
+    # Красивый вывод и график
     print("Пропорции смешивания:")
     for i, prop in enumerate(proportions):
         print(f"Свет {i + 1}: {prop * 100:.5f}%")
+
+    print("\nНеобходимые яркости:")
+    for i, bri in enumerate(brightnesses):
+        print(f"Свет {i + 1}: {bri:.2f}")
     plot_color_matching_accuracy(proportions, my_list, max_precision=1000, step=10)

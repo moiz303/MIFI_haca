@@ -31,9 +31,9 @@ def res_color(colors: tuple, name: str):
 
 
 if __name__ == '__main__':
-    first = Hash('templates/file.jpg').get_grey()
-    second = Hash('templates/file2.jpg').get_grey()
-    third = Hash('templates/file3.jpg').get_grey()
-    fourth = Hash('templates/file4.jpg').get_grey()
-    res_color(fourth, 'file4.png')
+    first = Hash('templates/file.png').get_grey()
+    second = Hash('templates/file2.png').get_grey()
+    third = Hash('templates/file3.png').get_grey()
+    fourth = Hash('templates/file4.png').get_grey()
+    #res_color(fourth, 'file4.png')
     print(first, '\n', second, '\n', third, '\n', fourth)
